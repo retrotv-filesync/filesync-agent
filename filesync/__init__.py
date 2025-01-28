@@ -1,11 +1,41 @@
 import time
-from watchdog.observers import Observer
+import sqlite3
+import configparser
 
+from watchdog.observers import Observer
 from filesync.EventHandler import EventHandler
 
+
+properties = configparser.ConfigParser()
+properties.read("../config.ini")
+
+
+def create_table():
+    db_config = properties["DB"]
+
+    con = sqlite3.connect(db_config["db"])
+    cur = con.cursor()
+    cur.execute(
+        """
+        CREATE TABLE FILESYNC_INFO (
+            FILEPATH TEXT,
+            MODE TEXT,
+            TYPE TEXT
+        )
+        """
+    )
+
+    con.commit()
+    con.close()
+
+
 if __name__ == "__main__":
+    create_table()
+
+    path_config = properties["PATH"]
+
     paths = [
-        "<path>"
+        path_config["paths"],
     ]
     event_handler = EventHandler()
     observers = []
@@ -14,7 +44,7 @@ if __name__ == "__main__":
         observer = Observer()
 
         # recursive=True로 설정하면 하위 디렉터리까지 감시
-        observer.schedule(event_handler, path, recursive=False)
+        observer.schedule(event_handler, path, recursive=True)
         observer.start()
         observers.append(observer)
 
