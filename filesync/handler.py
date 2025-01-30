@@ -1,5 +1,11 @@
-import logging
+"""
+watchdog 라이브러리를 이용한 파일 시스템 이벤트 핸들러 클래스
+"""
 import sqlite3
+
+from property import Property
+from log4p import Log
+
 from watchdog.events import (
     FileSystemEventHandler,
     FileDeletedEvent, FileCreatedEvent, FileModifiedEvent, FileMovedEvent,
@@ -7,8 +13,8 @@ from watchdog.events import (
     FileClosedEvent, FileClosedNoWriteEvent, FileOpenedEvent
 )
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(__name__)
+log = Log(__name__).get_logger
+db_config = Property("../config.ini", "DB").get_properties
 
 
 class EventHandler(FileSystemEventHandler):
@@ -22,15 +28,15 @@ class EventHandler(FileSystemEventHandler):
         :param event: 파일/디렉터리 생성 이벤트
         :return: None
         """
-        con = sqlite3.connect("filesync.db")
+        con = sqlite3.connect(db_config["db"])
         cur = con.cursor()
 
         if isinstance(event, FileCreatedEvent):
             log.info(f"파일이 생성되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'C', 'F')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'CREATE', 'F')")
         else:
             log.info(f"디렉터리가 생성되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'C', 'D')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'CREATE', 'D')")
 
         con.commit()
         con.close()
@@ -41,15 +47,15 @@ class EventHandler(FileSystemEventHandler):
         :param event: 파일/디렉터리 삭제 이벤트
         :return: None
         """
-        con = sqlite3.connect("filesync.db")
+        con = sqlite3.connect(db_config["db"])
         cur = con.cursor()
 
         if isinstance(event, FileDeletedEvent):
             log.info(f"파일이 삭제되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'D', 'F')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'DELETE', 'F')")
         else:
             log.info(f"디렉터리가 삭제되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'D', 'D')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'DELETE', 'D')")
 
         con.commit()
         con.close()
@@ -60,15 +66,15 @@ class EventHandler(FileSystemEventHandler):
         :param event: 파일/디렉터리 수정 이벤트
         :return: None
         """
-        con = sqlite3.connect("filesync.db")
+        con = sqlite3.connect(db_config["db"])
         cur = con.cursor()
 
         if isinstance(event, FileModifiedEvent):
             log.info(f"파일이 수정되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'M', 'F')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'MODIFY', 'F')")
         else:
             log.info(f"디렉터리가 수정되었습니다: {event.src_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'M', 'D')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'MODIFY', 'D')")
 
         con.commit()
         con.close()
@@ -79,19 +85,19 @@ class EventHandler(FileSystemEventHandler):
         :param event: 파일/디렉터리 이동 이벤트
         :return: None
         """
-        con = sqlite3.connect("filesync.db")
+        con = sqlite3.connect(db_config["db"])
         cur = con.cursor()
 
         if isinstance(event, FileMovedEvent):
             log.info(f"파일이 이동되었습니다: {event.src_path} -> {event.dest_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'M', 'F')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'MOVE', 'F')")
         else:
             log.info(f"디렉터리가 이동되었습니다: {event.src_path} -> {event.dest_path}")
-            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'M', 'D')")
+            cur.execute(f"INSERT INTO FILESYNC_INFO (FILEPATH, MODE, TYPE) VALUES ('{event.src_path}', 'MOVE', 'D')")
 
         con.commit()
         con.close()
-            
+
     def on_closed(self, event: FileClosedEvent) -> None:
         """Called when a file opened for writing is closed.
 
@@ -100,7 +106,7 @@ class EventHandler(FileSystemEventHandler):
         :type event:
             :class:`FileClosedEvent`
         """
-        
+
         log.info(f"파일이 닫혔습니다: {event.src_path}")
 
     def on_closed_no_write(self, event: FileClosedNoWriteEvent) -> None:

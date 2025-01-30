@@ -1,41 +1,48 @@
 import time
 import sqlite3
-import configparser
 
 from watchdog.observers import Observer
-from filesync.EventHandler import EventHandler
+from filesync.handler import EventHandler
+from filesync.property import Property
+
+db_config = Property("../config.ini", "DB").get_properties
+path_config = Property("../config.ini", "PATH").get_properties
 
 
-properties = configparser.ConfigParser()
-properties.read("../config.ini")
-
-
-def create_table():
-    db_config = properties["DB"]
-
+def create_table() -> None:
     con = sqlite3.connect(db_config["db"])
     cur = con.cursor()
+
+    # FILESYNC_INFO 테이블이 존재하는지 확인
     cur.execute(
         """
-        CREATE TABLE FILESYNC_INFO (
-            FILEPATH TEXT,
-            MODE TEXT,
-            TYPE TEXT
-        )
+        SELECT COUNT(*) FROM SQLITE_MASTER WHERE NAME = 'FILESYNC_INFO'
         """
     )
+    is_exist = cur.fetchone()[0] == 1
 
-    con.commit()
+    # FILESYNC_INFO 테이블이 존재하지 않으면 생성
+    if not is_exist:
+        cur.execute(
+            """
+            CREATE TABLE FILESYNC_INFO (
+                FILEPATH TEXT,
+                MODE TEXT,
+                TYPE TEXT
+            )
+            """
+        )
+
+        con.commit()
+
     con.close()
 
 
 if __name__ == "__main__":
     create_table()
 
-    path_config = properties["PATH"]
-
     paths = [
-        path_config["paths"],
+        path_config["paths"]
     ]
     event_handler = EventHandler()
     observers = []
