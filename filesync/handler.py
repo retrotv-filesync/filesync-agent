@@ -3,8 +3,8 @@ watchdog 라이브러리를 이용한 파일 시스템 이벤트 핸들러 클�
 """
 import sqlite3
 
-from property import Property
 from log4p import Log
+from property import Property
 
 from watchdog.events import (
     FileSystemEventHandler,

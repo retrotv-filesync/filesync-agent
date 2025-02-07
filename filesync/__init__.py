@@ -2,8 +2,8 @@ import time
 import sqlite3
 
 from watchdog.observers import Observer
-from filesync.handler import EventHandler
-from filesync.property import Property
+from handler import EventHandler
+from property import Property
 
 db_config = Property("../config.ini", "DB").get_properties
 path_config = Property("../config.ini", "PATH").get_properties
