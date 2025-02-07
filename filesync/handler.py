@@ -3,7 +3,8 @@ watchdog 라이브러리를 이용한 파일 시스템 이벤트 핸들러 클�
 """
 import sqlite3
 
-from log4p import Log
+from log import Log
+
 from property import Property
 
 from watchdog.events import (
@@ -13,7 +14,7 @@ from watchdog.events import (
     FileClosedEvent, FileClosedNoWriteEvent, FileOpenedEvent
 )
 
-log = Log(__name__).get_logger
+log = Log(__name__, filename="filesync.log").get_logger
 db_config = Property("../config.ini", "DB").get_properties
 
 
